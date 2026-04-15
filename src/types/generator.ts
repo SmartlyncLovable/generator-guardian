@@ -1,0 +1,37 @@
+export type GeneratorStatus = 'Running' | 'Stopped' | 'Fault';
+
+export interface Generator {
+  dg_id: string;
+  name: string;
+  status: GeneratorStatus;
+  control_mode: string;
+  engine_speed: number;
+  oil_pressure: number;
+  coolant_temp: number;
+  voltage: number;
+  frequency: number;
+  created_at: string;
+  engine_starts: number;
+  engine_hours: string;
+  alarm_1: string;
+  alarm_2: string;
+  alarm_3: string;
+  mains_kw: string;
+  mains_kva: string;
+  mains_kvar: string;
+  mains_pf: string;
+  gen_kw: string;
+  gen_kva: string;
+  gen_kvar: string;
+}
+
+export interface LiveParameters extends Generator {
+  updated_at: string;
+}
+
+export interface GeneratorListResponse { data: Generator[]; total: number; }
+export interface GeneratorDetailResponse { data: Generator; }
+export interface LiveParametersResponse { data: LiveParameters; }
+export interface AnalyticsResponse {
+  data: { timestamp: string; voltage: number; frequency: number; engine_speed: number; coolant_temp: number; oil_pressure: number; }[];
+}

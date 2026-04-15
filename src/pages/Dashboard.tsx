@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { generators, GeneratorStatus } from "@/data/generators";
+import type { GeneratorStatus } from "@/types/generator";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useGenerators } from "@/hooks/useGenerators";
 import { Badge } from "@/components/ui/badge";
 import { Search, BarChart3, Download, Activity } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+
 
 const statusStyles: Record<GeneratorStatus, string> = {
   Running: "status-running",
@@ -24,12 +26,10 @@ export default function Dashboard() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<GeneratorStatus | "All">("All");
   const navigate = useNavigate();
-
-  const filtered = generators.filter((g) => {
-    const matchSearch = g.name.toLowerCase().includes(search.toLowerCase()) || g.id.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = statusFilter === "All" || g.status === statusFilter;
-    return matchSearch && matchStatus;
-  });
+    
+  // After
+  const { data: generators, loading, error } = useGenerators({ status: statusFilter !== 'All' ? statusFilter : undefined, search });
+  //console.log("Generators:", generators, "Loading:", loading, "Error:", error);
 
   const counts = {
     Running: generators.filter((g) => g.status === "Running").length,
@@ -115,18 +115,19 @@ export default function Dashboard() {
             <thead>
               <tr className="border-b bg-muted/50">
                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">Generator</th>
+                {/*<th className="text-center px-4 py-3 font-medium text-muted-foreground">Gen. Mode</th>*/}
                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
-                <th className="text-right px-4 py-3 font-medium text-muted-foreground">Speed (RPM)</th>
-                <th className="text-right px-4 py-3 font-medium text-muted-foreground">Oil (PSI)</th>
-                <th className="text-right px-4 py-3 font-medium text-muted-foreground">Coolant (°C)</th>
-                <th className="text-right px-4 py-3 font-medium text-muted-foreground">Voltage (V)</th>
-                <th className="text-right px-4 py-3 font-medium text-muted-foreground">Freq (Hz)</th>
-                <th className="text-center px-4 py-3 font-medium text-muted-foreground">Mode</th>
-                <th className="text-right px-4 py-3 font-medium text-muted-foreground">Actions</th>
+                <th className="text-right px-4 py-3 font-medium text-muted-foreground">Engine Speed</th>
+                <th className="text-right px-4 py-3 font-medium text-muted-foreground">Gen. Voltage</th>
+                <th className="text-right px-4 py-3 font-medium text-muted-foreground">Gen. Frequency</th>
+                {/*<th className="text-right px-4 py-3 font-medium text-muted-foreground">Engine Oil</th>
+                <th className="text-right px-4 py-3 font-medium text-muted-foreground">Coolant (°C)</th>*/}
+                <th className="text-right px-4 py-3 font-medium text-muted-foreground">Last Posted</th>
+                <th className="text-center px-4 py-3 font-medium text-muted-foreground">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((g) => (
+              {generators.map((g) => (
                 <tr key={g.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3">
                     <div>
@@ -134,28 +135,30 @@ export default function Dashboard() {
                       <span className="text-muted-foreground font-mono text-xs ml-2">{g.id}</span>
                     </div>
                   </td>
+                  {/*<td className="px-4 py-3 text-center">
+                    <Badge variant="secondary" className="font-mono text-xs">{g.controlMode}</Badge>
+                  </td>*/}
                   <td className="px-4 py-3">
                     <Badge variant="outline" className={`${statusStyles[g.status]} border font-mono text-xs`}>
                       <span className={`inline-block h-1.5 w-1.5 rounded-full mr-1.5 ${dotStyles[g.status]}`} />
                       {g.status}
                     </Badge>
                   </td>
-                  <td className="px-4 py-3 text-right font-mono">{g.engineSpeed}</td>
-                  <td className="px-4 py-3 text-right font-mono">{g.oilPressure}</td>
-                  <td className="px-4 py-3 text-right font-mono">{g.coolantTemp}</td>
-                  <td className="px-4 py-3 text-right font-mono">{g.voltage}</td>
-                  <td className="px-4 py-3 text-right font-mono">{g.frequency}</td>
-                  <td className="px-4 py-3 text-center">
-                    <Badge variant="secondary" className="font-mono text-xs">{g.controlMode}</Badge>
-                  </td>
+                  <td className="px-4 py-3 text-right font-mono">{g.engine_speed} RPM</td>
+                  <td className="px-4 py-3 text-right font-mono">{g.voltage} V</td>
+                  <td className="px-4 py-3 text-right font-mono">{g.frequency} Hz</td>
+                  {/*<td className="px-4 py-3 text-right font-mono">{g.oil_pressure} PSI</td>
+                  <td className="px-4 py-3 text-right font-mono">{g.coolantTemp}°C</td>*/}
+                  <td className="px-4 py-3 text-right font-mono">{g.created_at}</td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex gap-1 justify-end">
                       <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => navigate(`/analytics/${g.id}`)}>
                         <BarChart3 className="h-3 w-3 mr-1" />
                         Analytics
                       </Button>
-                      <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => navigate(`/export?gen=${g.id}`)}>
-                        <Download className="h-3 w-3" />
+                      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => navigate(`/analytics/${g.id}`)}>
+                        <BarChart3 className="h-3 w-3 mr-1" />
+                        Live Param
                       </Button>
                     </div>
                   </td>
@@ -164,7 +167,7 @@ export default function Dashboard() {
             </tbody>
           </table>
         </div>
-        {filtered.length === 0 && (
+        {generators.length === 0 && (
           <div className="p-8 text-center text-muted-foreground">No generators found</div>
         )}
       </div>
