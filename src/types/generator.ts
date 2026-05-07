@@ -7,10 +7,11 @@ export interface Generator {
   control_mode: string;
   engine_speed: number;
   oil_pressure: number;
-  coolant_temp: number;
-  voltage: number;
-  frequency: number;
+  coolant_temperature: number;
+  generator_voltage: number;
+  generator_frequency: number;
   created_at: string;
+  location: string;
   engine_starts: number;
   engine_hours: string;
   alarm_1: string;
@@ -20,7 +21,7 @@ export interface Generator {
   mains_kva: string;
   mains_kvar: string;
   mains_pf: string;
-  gen_kw: string;
+  generator_kw: string;
   gen_kva: string;
   gen_kvar: string;
 }

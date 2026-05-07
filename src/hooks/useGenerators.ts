@@ -47,7 +47,8 @@ export function useGenerator(id: string) {
   return { data, loading, error };
 }
 
-export function useGeneratorAnalytics(id: string, range: '1h' | '24h' | '7d' = '24h') {
+
+export function useGeneratorAnalytics(id: string, range: '1h' | 'none' | '24h' | '7d' = '24h') {
   const [data, setData] = useState<AnalyticsResponse['data']>([]);
 
   useEffect(() => {
@@ -55,4 +56,20 @@ export function useGeneratorAnalytics(id: string, range: '1h' | '24h' | '7d' = '
   }, [id, range]);
 
   return { data };
+}
+
+export function useGeneratorIP(id: string) {
+  const [data, setData] = useState<Generator | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLoading(true);
+    generatorApi.getIP(id)
+      .then(r => setData(r.data))
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  return { data, loading, error };
 }

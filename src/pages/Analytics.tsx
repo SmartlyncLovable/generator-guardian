@@ -2,130 +2,366 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useGenerator, useGeneratorAnalytics } from "@/hooks/useGenerators";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Gauge, Clock, Zap, Activity, AlertTriangle } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import {
+  ArrowLeft, BarChart3, Gauge, Clock, Zap, Activity,
+  AlertTriangle, MapPin, Cpu,
+} from "lucide-react";
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer,
+} from "recharts";
+
+const statusMeta = {
+  Running: {
+    badge: "bg-emerald-500/10 border-emerald-500/30 text-emerald-400",
+    dot:   "bg-emerald-400 shadow-[0_0_6px_2px_rgba(52,211,153,0.5)] animate-pulse",
+  },
+  Stopped: {
+    badge: "bg-slate-500/10 border-slate-500/30 text-slate-400",
+    dot:   "bg-slate-400",
+  },
+  Fault: {
+    badge: "bg-red-500/10 border-red-500/30 text-red-400",
+    dot:   "bg-red-400 shadow-[0_0_6px_2px_rgba(239,68,68,0.5)] animate-pulse",
+  },
+} as const;
+
+const charts = [
+  { title: "Voltage (V)",              dataKey: "generator_voltage",   color: "hsl(142, 70%, 45%)" },
+  { title: "Frequency (Hz)",           dataKey: "generator_frequency", color: "hsl(38, 92%, 50%)"  },
+  { title: "Oil Pressure (PSI)",       dataKey: "oil_pressure",        color: "hsl(210, 100%, 55%)"},
+  { title: "Coolant Temperature (°C)", dataKey: "coolant_temperature", color: "hsl(0, 72%, 51%)"   },
+];
 
 export default function Analytics() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
   const { data: generator, loading, error } = useGenerator(id!);
-  console.log("Generator:", generator, "Loading:", loading, "Error:", error);
   const gen = generator;
-  const { data: analytics } = useGeneratorAnalytics(id!);
+  const { data: analytics } = useGeneratorAnalytics(id!, "none");
 
-  if (loading) return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
-  if (error || !gen) {
-    return (
-      <div className="p-8 text-center">
-        <p className="text-muted-foreground">Generator not found</p>
-        <Button variant="outline" className="mt-4" onClick={() => navigate("/")}>Back to Dashboard</Button>
+  /* ---------- Loading ---------- */
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center h-64 gap-3">
+      <div className="h-10 w-10 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+      <p className="text-sm text-muted-foreground">Loading generator data...</p>
+    </div>
+  );
+
+  /* ---------- Error ---------- */
+  if (error || !gen) return (
+    <div className="flex flex-col items-center justify-center h-64 gap-4">
+      <div className="h-14 w-14 rounded-full bg-red-500/10 flex items-center justify-center">
+        <AlertTriangle className="h-7 w-7 text-red-500" />
       </div>
-    );
-  }
+      <div className="text-center">
+        <p className="font-semibold">Generator not found</p>
+        <p className="text-xs text-muted-foreground mt-1">The requested unit could not be located</p>
+      </div>
+      <Button variant="outline" size="sm" onClick={() => navigate("/")}>
+        <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
+      </Button>
+    </div>
+  );
 
-  const statusColor = gen.status === "Running" ? "text-[hsl(var(--status-running))]"
-    : gen.status === "Fault" ? "text-[hsl(var(--status-fault))]"
-    : "text-[hsl(var(--status-stopped))]";
-
-  const charts = [
-    { title: "Oil Pressure (PSI)",      dataKey: "oil_pressure",  color: "hsl(210, 100%, 55%)" },
-    { title: "Coolant Temperature (°C)", dataKey: "coolant_temp",  color: "hsl(0, 72%, 51%)" },
-    { title: "Voltage (V)",              dataKey: "voltage",       color: "hsl(142, 70%, 45%)" },
-    { title: "Frequency (Hz)",           dataKey: "frequency",     color: "hsl(38, 92%, 50%)" },
-  ];
+  const status = (gen.status ?? "Stopped") as keyof typeof statusMeta;
+  const meta   = statusMeta[status] ?? statusMeta.Stopped;
 
   const kpis = [
-    { label: "Engine Speed",  value: `${gen.engine_speed} RPM`, icon: Gauge },
-    { label: "Engine Starts", value: `${gen.engine_starts?.toLocaleString() ?? "—"}`, icon: Activity },
-    { label: "Engine Hours",  value: `${gen.engine_hours?.toLocaleString() ?? "—"}`,  icon: Clock },
-    { label: "Voltage",       value: `${gen.voltage} V`,        icon: Zap },
-    { label: "Frequency",     value: `${gen.frequency} Hz`,     icon: Zap },
-    { label: "Control Mode",  value: gen.control_mode,          icon: Activity },
+    { label: "Engine Speed",  value: `${gen.engine_speed} RPM`,                                                icon: Gauge    },
+    { label: "Engine Starts", value: `${gen.engine_starts?.toLocaleString() ?? "—"}`,                          icon: Activity },
+    { label: "Engine Hours",  value: `${gen.engine_hours?.toLocaleString() ?? "—"} h`,                         icon: Clock    },
+    { label: "Voltage",       value: `${gen.voltage} V`,                                                        icon: Zap      },
+    { label: "Frequency",     value: `${gen.frequency} Hz`,                                                     icon: Zap      },
+    { label: "Status",        value: gen.status?.charAt(0).toUpperCase() + gen.status?.slice(1).toLowerCase(),  icon: Activity },
   ];
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{gen.name}</h1>
-          <p className="text-muted-foreground text-sm font-mono">
-            {gen.id} · <span className={statusColor}>{gen.status}</span>
-          </p>
+
+      {/* ── Header Banner ── */}
+      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-5 text-white shadow-xl">
+        <div className="absolute inset-0 opacity-5 bg-[linear-gradient(rgba(255,255,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[size:24px_24px]" />
+        <div className="absolute -top-8 -right-8 h-36 w-36 rounded-full bg-primary/20 blur-3xl" />
+
+        <div className="relative z-10 flex items-center gap-4 flex-wrap">
+          <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 shrink-0" onClick={() => navigate("/")}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+
+          <div className="h-12 w-12 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0">
+            <BarChart3 className="h-6 w-6 text-white" />
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl font-bold tracking-tight truncate">{gen.name}</h1>
+            <span className="flex items-center gap-1 text-slate-400 text-xs mt-0.5">
+              <MapPin className="h-3 w-3" />{gen.location}
+            </span>
+          </div>
+
+          {/* Status badge */}
+          <div className={`flex items-center gap-1.5 border text-xs font-semibold px-3 py-1.5 rounded-full shrink-0 ${meta.badge}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
+            {status}
+          </div>
+
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20 shrink-0"
+            onClick={() => navigate(`/live_parameters/${id}`)}
+          >
+            <Activity className="h-3 w-3 mr-1.5" />
+            Live Parameters
+          </Button>
         </div>
       </div>
 
-      {/* Energy Metrics */}
+      {/* ── Power + Alarms ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="bg-card rounded-lg border p-4 shadow-sm">
-          <h3 className="text-sm font-medium mb-3">Generator Power</h3>
-          <div className="grid grid-cols-3 gap-3">
-            <div><p className="text-xs text-muted-foreground">kWh</p><p className="text-lg font-mono font-semibold">{gen.gen_kw?.kWh?.toLocaleString() ?? "—"}</p></div>
-            <div><p className="text-xs text-muted-foreground">kVAh</p><p className="text-lg font-mono font-semibold">{gen.gen_power?.kVAh?.toLocaleString() ?? "—"}</p></div>
-            <div><p className="text-xs text-muted-foreground">kVARh</p><p className="text-lg font-mono font-semibold">{gen.gen_power?.kVARh?.toLocaleString() ?? "—"}</p></div>
+
+        {/* Generator Power */}
+        <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+          <div className="px-4 py-3 border-b bg-muted/40">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <Zap className="h-3.5 w-3.5 text-violet-500" /> Generator Power
+            </h3>
           </div>
-        </div>
-        <div className="bg-card rounded-lg border p-4 shadow-sm">
-          <h3 className="text-sm font-medium mb-3">Mains Power</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <div><p className="text-xs text-muted-foreground">kWh</p><p className="text-lg font-mono font-semibold">{gen.mains_power?.kWh?.toLocaleString() ?? "—"}</p></div>
-            <div><p className="text-xs text-muted-foreground">kVARh</p><p className="text-lg font-mono font-semibold">{gen.mains_power?.kVARh?.toLocaleString() ?? "—"}</p></div>
-          </div>
-        </div>
-        <div className="bg-card rounded-lg border p-4 shadow-sm">
-          <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4" />
-            Alarms
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            {(gen.alarms ?? []).map((alarm: string, i: number) => (
-              <Badge key={i} variant="outline" className={alarm === "None" ? "status-stopped border" : "status-fault border"}>
-                Alarm {i + 1}: {alarm}
-              </Badge>
+          <div className="p-4 grid grid-cols-3 gap-3">
+            {[
+              { label: "kWh",   value: gen.generator_kw  },
+              { label: "kVAh",  value: gen.gen_kva        },
+              { label: "kVARh", value: gen.gen_kvar       },
+            ].map(({ label, value }) => (
+              <div key={label} className="text-center bg-muted/40 rounded-lg py-2 px-1">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">{label}</p>
+                <p className="text-base font-black font-mono text-violet-600 dark:text-violet-400">
+                  {value?.toLocaleString() ?? "—"}
+                </p>
+              </div>
             ))}
           </div>
-          {(gen.alarms ?? []).filter((a: string) => a !== "None").length === 0 && (
-            <p className="text-sm text-muted-foreground mt-2">No active alarms</p>
-          )}
+        </div>
+
+        {/* Mains Power */}
+        <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+          <div className="px-4 py-3 border-b bg-muted/40">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <Cpu className="h-3.5 w-3.5 text-sky-500" /> Mains Power
+            </h3>
+          </div>
+          <div className="p-4 grid grid-cols-2 gap-3">
+            {[
+              { label: "kVA",   value: gen.mains_kva  },
+              { label: "kVARh", value: gen.mains_kvar },
+            ].map(({ label, value }) => (
+              <div key={label} className="text-center bg-muted/40 rounded-lg py-2 px-1">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">{label}</p>
+                <p className="text-base font-black font-mono text-sky-600 dark:text-sky-400">
+                  {value?.toLocaleString() ?? "—"}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Alarms */}
+        <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+          <div className="px-4 py-3 border-b bg-muted/40">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <AlertTriangle className="h-3.5 w-3.5 text-red-500" /> Alarms
+            </h3>
+          </div>
+          <div className="p-4 flex flex-wrap gap-2">
+            {(gen.alarms ?? []).map((alarm: string, i: number) => (
+              <Badge
+                key={i}
+                variant="outline"
+                className={alarm === "None"
+                  ? "text-muted-foreground border-border text-xs"
+                  : "bg-red-500/10 text-red-600 border-red-200 dark:text-red-400 dark:border-red-800 text-xs"
+                }
+              >
+                {alarm === "None" ? "No alarm" : `Alarm ${i + 1}: ${alarm}`}
+              </Badge>
+            ))}
+            {(gen.alarms ?? []).filter((a: string) => a !== "None").length === 0 && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> No active alarms
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* KPI Cards */}
+      {/* ── KPI Cards ── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        {kpis.map((kpi) => (
-          <div key={kpi.label} className="kpi-card">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <kpi.icon className="h-3.5 w-3.5" />
-              <span className="text-xs">{kpi.label}</span>
-            </div>
-            <p className="text-lg font-semibold font-mono">{kpi.value}</p>
+        {kpis.map((kpi, i) => (
+          <div key={kpi.label} className="rounded-xl border bg-card p-4 shadow-sm">
+
+            {/* Engine Speed */}
+            {i === 0 && (
+              <>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <kpi.icon className="h-3.5 w-3.5" />
+                    <span className="text-xs">{kpi.label}</span>
+                  </div>
+                  <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-600 dark:text-sky-400">RPM</span>
+                </div>
+                <p className="text-lg font-bold font-mono text-sky-600 dark:text-sky-400">
+                  {gen.engine_speed?.toLocaleString() ?? "—"}
+                </p>
+                <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-sky-400 to-blue-500 transition-all duration-700"
+                    style={{ width: `${Math.min((gen.engine_speed / 3000) * 100, 100)}%` }}
+                  />
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1">of 3000 RPM max</p>
+              </>
+            )}
+
+            {/* Engine Starts — shows a start count with a subtle fire/ignition tint */}
+            {i === 1 && (
+              <>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <kpi.icon className="h-3.5 w-3.5" />
+                    <span className="text-xs">{kpi.label}</span>
+                  </div>
+                  <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-500">starts</span>
+                </div>
+                <p className="text-lg font-bold font-mono text-orange-500 dark:text-orange-400">
+                  {gen.engine_starts?.toLocaleString() ?? "—"}
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-2">total ignition cycles</p>
+              </>
+            )}
+
+            {/* Engine Hours — progress bar toward a 500h service interval */}
+            {i === 2 && (
+              <>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <kpi.icon className="h-3.5 w-3.5" />
+                    <span className="text-xs">{kpi.label}</span>
+                  </div>
+                  <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400">hrs</span>
+                </div>
+                <p className="text-lg font-bold font-mono text-amber-600 dark:text-amber-400">
+                  {gen.engine_hours?.toLocaleString() ?? "—"}
+                </p>
+                <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 transition-all duration-700"
+                    style={{ width: `${Math.min(((gen.engine_hours ?? 0) % 500) / 500 * 100, 100)}%` }}
+                  />
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  {500 - ((gen.engine_hours ?? 0) % 500)} h to next service
+                </p>
+              </>
+            )}
+
+            {/* Voltage — colored value with stability indicator */}
+            {i === 3 && (
+              <>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <kpi.icon className="h-3.5 w-3.5" />
+                    <span className="text-xs">{kpi.label}</span>
+                  </div>
+                  <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-600 dark:text-violet-400">V</span>
+                </div>
+                <p className="text-lg font-bold font-mono text-violet-600 dark:text-violet-400">{gen.voltage}</p>
+                <p className="text-[10px] mt-2 flex items-center gap-1">
+                  {gen.voltage >= 210 && gen.voltage <= 240
+                    ? <><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /><span className="text-emerald-600 dark:text-emerald-400">Within normal range</span></>
+                    : <><span className="h-1.5 w-1.5 rounded-full bg-red-400" /><span className="text-red-500">Out of range</span></>
+                  }
+                </p>
+              </>
+            )}
+
+            {/* Frequency — colored value with stability indicator */}
+            {i === 4 && (
+              <>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <kpi.icon className="h-3.5 w-3.5" />
+                    <span className="text-xs">{kpi.label}</span>
+                  </div>
+                  <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">Hz</span>
+                </div>
+                <p className="text-lg font-bold font-mono text-emerald-600 dark:text-emerald-400">{gen.frequency}</p>
+                <p className="text-[10px] mt-2 flex items-center gap-1">
+                  {gen.frequency >= 49 && gen.frequency <= 51
+                    ? <><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /><span className="text-emerald-600 dark:text-emerald-400">Stable at 50 Hz</span></>
+                    : <><span className="h-1.5 w-1.5 rounded-full bg-red-400" /><span className="text-red-500">Frequency drift</span></>
+                  }
+                </p>
+              </>
+            )}
+
+            {/* Status — colored badge matching the generator state */}
+            {i === 5 && (
+              <>
+                <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                  <kpi.icon className="h-3.5 w-3.5" />
+                  <span className="text-xs">{kpi.label}</span>
+                </div>
+                <div className={`inline-flex items-center gap-1.5 border text-xs font-semibold px-2 py-1 rounded-full ${meta.badge}`}>
+                  <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
+                  {status}
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-2">current state</p>
+              </>
+            )}
+
           </div>
         ))}
       </div>
 
-      {/* Charts */}
+      {/* ── Charts ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {charts.map((chart) => (
-          <div key={chart.title} className="bg-card rounded-lg border p-4 shadow-sm">
-            <h3 className="text-sm font-medium mb-3">{chart.title}</h3>
-            <div className="h-48">
+          <div key={chart.title} className="rounded-xl border bg-card shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b bg-muted/40">
+              <h3 className="text-sm font-semibold">{chart.title}</h3>
+            </div>
+            <div className="p-4 h-72">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={analytics}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 15%, 90%)" />
-                  <XAxis dataKey="timestamp" tick={{ fontSize: 10 }} stroke="hsl(220, 10%, 50%)" />
-                  <YAxis tick={{ fontSize: 10 }} stroke="hsl(220, 10%, 50%)" />
-                  <Tooltip contentStyle={{ background: "hsl(0, 0%, 100%)", border: "1px solid hsl(220, 15%, 90%)", borderRadius: 8, fontSize: 12 }} />
-                  <Line type="monotone" dataKey={chart.dataKey} stroke={chart.color} strokeWidth={2} dot={false} />
+                <LineChart data={analytics} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(220,15%,92%)" />
+                  <XAxis dataKey="timestamp" tick={{ fontSize: 9 }} stroke="hsl(220,10%,60%)" />
+                  <YAxis tick={{ fontSize: 9 }} stroke="hsl(220,10%,60%)" />
+                  <Tooltip
+                    contentStyle={{
+                      background: "hsl(0,0%,100%)",
+                      border: "1px solid hsl(220,15%,90%)",
+                      borderRadius: 8,
+                      fontSize: 11,
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey={chart.dataKey}
+                    stroke={chart.color}
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4, strokeWidth: 0 }}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </div>
         ))}
       </div>
+
     </div>
   );
 }

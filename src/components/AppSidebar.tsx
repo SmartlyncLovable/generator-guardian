@@ -1,6 +1,16 @@
-import { LayoutDashboard, ScrollText, Download, Zap } from "lucide-react";
+import { 
+  LayoutDashboard, 
+  ScrollText, 
+  Download, 
+  Zap, 
+  UserCog, 
+  LogOut, 
+  Settings, 
+  ChevronsUpDown,
+  User,
+} from "lucide-react";
+import logo from '@/img/egenco.png';
 import { NavLink } from "@/components/NavLink";
-import { useLocation } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
@@ -11,53 +21,90 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
+  SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const navItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Logs", url: "/logs", icon: ScrollText },
-  { title: "Export", url: "/export", icon: Download },
+  { title: "Generator Activities", url: "/logs", icon: ScrollText },
+  { title: "User Management", url: "/users", icon: UserCog },
+  { title: "Reports", url: "/report", icon: Download },
 ];
 
+const user = {
+  name: "Alex River",
+  email: "alex@genwatch.io",
+  avatar: "https://github.com/shadcn.png",
+};
+
 export function AppSidebar() {
-  const { state } = useSidebar();
+  const { isMobile, state } = useSidebar();
   const collapsed = state === "collapsed";
-  const location = useLocation();
 
   return (
-    <Sidebar collapsible="icon" className="border-r-0">
-      <SidebarHeader className="p-4">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-            <Zap className="h-4 w-4 text-primary-foreground" />
-          </div>
-          {!collapsed && (
-            <div>
-              <h1 className="text-sm font-semibold text-sidebar-foreground">GenWatch</h1>
-              <p className="text-[10px] text-sidebar-foreground/60 font-mono">IoT MONITOR</p>
+    <Sidebar collapsible="icon" className="border-r border-sidebar-border/50">
+      {/* --- LOGO SECTION --- */}
+      <SidebarHeader className=" bg-white transition-all duration-300 ease-in-out">
+        <div className={`flex flex-col items-center justify-center ${collapsed ? 'py-4' : 'pt-8 pb-4'}`}>
+          {collapsed ? (
+            // Small Icon for Collapsed State
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#0b59a9] shadow-lg">
+              <Zap className="h-5 w-5 text-white" />
+            </div>
+          ) : (
+            // Full Logo for Expanded State
+            <div className="w-full px-4 flex  flex-col items-center">
+              <img src={logo} alt="Egenco Logo" className="h-12 w-auto mb-6 object-contain" />
+              
+              {/* Profile Highlight Box */}
+              <div className="w-full bg-[#0b59a9] rounded-xl p-3 shadow-md border border-white/10 group relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-1 opacity-20">
+                  <Zap className="h-8 w-8 text-white pt-4" />
+                </div>
+                <p className="text-sm font-bold text-white truncate relative z-10">{user.name}</p>
+                <p className="text-[10px] text-blue-100 uppercase tracking-widest opacity-80 relative z-10">{user.email}</p>
+              </div>
             </div>
           )}
         </div>
       </SidebarHeader>
-      <SidebarContent>
+
+      {/* --- NAVIGATION --- */}
+      <SidebarContent className="px-2">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/40 text-[10px] font-mono tracking-widest uppercase">
-            Navigation
-          </SidebarGroupLabel>
+          {!collapsed && (
+            <SidebarGroupLabel className="px-4 text-[10px] font-bold text-muted-foreground/60 uppercase tracking-[0.2em]">
+              System Menu
+            </SidebarGroupLabel>
+          )}
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-1">
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton
+                    asChild
+                    tooltip={item.title}
+                    className="h-11 transition-all duration-200 group"
+                  >
                     <NavLink
                       to={item.url}
                       end={item.url === "/"}
-                      className="hover:bg-sidebar-accent/50 text-sidebar-foreground/70"
-                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                      className="flex items-center w-full rounded-lg px-3"
+                      activeClassName="bg-[#0b59a9]/10 text-[#0b59a9] font-bold shadow-sm"
                     >
-                      <item.icon className="mr-2 h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
+                      <item.icon className="h-[18px] w-[18px] shrink-0 transition-transform group-hover:scale-110" />
+                      {!collapsed && <span className="ml-3 text-[13px]">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -66,6 +113,17 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+
+      {/* --- FOOTER: USER & POWERED BY --- */}
+      <SidebarFooter className="p-4 space-y-4">
+        {!collapsed && (
+          <div className="bg-white border border-border/50 rounded-full py-2 px-4 flex items-center justify-center transition-opacity duration-300">
+            <p className="text-[13px] text-muted-foreground flex items-center gap-1.5 tracking-tighter">
+              Powered By <span className="font-bold text-[#0b59a9]">iMoSyS</span>
+            </p>
+          </div>
+        )}
+      </SidebarFooter>
     </Sidebar>
   );
 }

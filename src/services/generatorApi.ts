@@ -11,15 +11,29 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const generatorApi = {
-  /*list: (params?: { status?: string; search?: string }) => {
-    const q = new URLSearchParams(params as Record<string, string>).toString();
-    return request<GeneratorListResponse>(`/generators${q ? `?${q}` : ''}`);
-  },*/
   list: () => {
     return request<GeneratorListResponse>(`/generators`);
   },
-  get: (id: string) => request<GeneratorDetailResponse>(`/generators/${id}`),
-  analytics: (id: string, range?: '1h' | '24h' | '7d') =>
-    request<AnalyticsResponse>(`/generators/${id}/analytics${range ? `?range=${range}` : ''}`),
-  liveParameters: (id: string) => request<LiveParametersResponse>(`/generators/${id}/live`),
+  getIP: (id: string) =>
+    request<GeneratorDetailResponse>(`/generators/${id}/ip`),
+
+  get: (id: string) =>
+    request<GeneratorDetailResponse>(`/generators/${id}`),
+
+  analytics: (id: string, range?: '1h' | '24h' | '7d' | 'none') => {
+    if (range && range === 'none') {
+        console.log("Fetching analytics without range parameter");
+        return request<AnalyticsResponse>(
+            `/generators/${id}/analytics/today`
+        );
+    } else {
+        console.log(`Fetching analytics with range=${range}`);
+      return request<AnalyticsResponse>(
+        `/generators/${id}/analytics?range=${range}`
+      );
+    }
+  },
+
+  liveParameters: (id: string) =>
+    request<LiveParametersResponse>(`/generators/${id}/live`),
 };
