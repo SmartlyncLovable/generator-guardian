@@ -85,7 +85,7 @@ export default function Dashboard() {
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-1">Running</p>
               <p className="text-4xl font-black font-mono text-emerald-600 dark:text-emerald-400">{counts.Running}</p>
-              <p className="text-xs text-muted-foreground mt-1">generators active</p>
+              <p className="text-xs text-muted-foreground mt-1">Active Generators</p>
             </div>
             <div className="h-12 w-12 rounded-xl bg-emerald-500/15 flex items-center justify-center">
               <Activity className="h-6 w-6 text-emerald-500" />
@@ -106,7 +106,7 @@ export default function Dashboard() {
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-1">Stopped</p>
               <p className="text-4xl font-black font-mono text-slate-600 dark:text-slate-300">{counts.Stopped}</p>
-              <p className="text-xs text-muted-foreground mt-1">generators offline</p>
+              <p className="text-xs text-muted-foreground mt-1">Generators </p>
             </div>
             <div className="h-12 w-12 rounded-xl bg-slate-500/10 flex items-center justify-center">
               <Power className="h-6 w-6 text-slate-500" />
@@ -127,7 +127,7 @@ export default function Dashboard() {
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-red-500 dark:text-red-400 mb-1">Fault</p>
               <p className="text-4xl font-black font-mono text-red-500 dark:text-red-400">{counts.Fault}</p>
-              <p className="text-xs text-muted-foreground mt-1">generators in fault</p>
+              <p className="text-xs text-muted-foreground mt-1">Faulty Generators</p>
             </div>
             <div className="h-12 w-12 rounded-xl bg-red-500/10 flex items-center justify-center">
               <AlertTriangle className="h-6 w-6 text-red-500" />

@@ -56,8 +56,10 @@ export default function Export() {
   const [previewing, setPreviewing]       = useState(false);
 
   const { data: analytics, loading: analyticsLoading } = useGeneratorAnalytics(
-    selectedGen || generators[0]?.id,
-    "none"
+  selectedGen || generators[0]?.id,
+  "none",
+  dateFrom,
+  dateTo
   );
 
   const toggleParam = (p: string) =>
@@ -100,10 +102,8 @@ export default function Export() {
       </div>
 
       {/* ── Two-column layout ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* LEFT — Config panel (2/5) */}
-        <div className="lg:col-span-2 space-y-4">
 
           {/* Generator */}
           <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
@@ -117,7 +117,6 @@ export default function Export() {
                 onChange={(e) => { setSelectedGen(e.target.value); setPreviewing(false); }}
                 className="w-full border rounded-lg px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
               >
-                <option value="">All Generators</option>
                 {generators.map((g) => (
                   <option key={g.id} value={g.id}>{g.name} — {g.location}</option>
                 ))}
@@ -144,7 +143,7 @@ export default function Export() {
           </div>
 
           {/* Format */}
-          <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+          {/*<div className="rounded-xl border bg-card shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b bg-muted/40 flex items-center gap-2">
               <FileText className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Export Format</span>
@@ -162,9 +161,10 @@ export default function Export() {
                 </button>
               ))}
             </div>
-          </div>
+          </div>*/}
 
           {/* Action buttons */}
+
           <div className="flex gap-2">
             <Button
               variant="outline"
@@ -189,11 +189,9 @@ export default function Export() {
               )}
             </Button>
           </div>
+
         </div>
-
-        {/* RIGHT — Parameters + Preview (3/5) */}
-        <div className="lg:col-span-3 space-y-4">
-
+        <div className="grid grid-cols-1">
           {/* Parameters */}
           <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b bg-muted/40 flex items-center justify-between">
@@ -226,12 +224,27 @@ export default function Export() {
             </div>
           </div>
 
+        <div className="lg:col-span-5 space-y-4">
+          
           {/* Preview Table */}
-          <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+          <div className="rounded-xl border bg-card mt-6 shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b bg-muted/40 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Eye className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Data Preview</span>
+                <div className=" flex gap-2">
+                  {formats.map((f) => (
+                    <button
+                      key={f.label}
+                      data-active={format === f.label}
+                      onClick={() => setFormat(f.label)}
+                      className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg border transition-all ${f.color}`}
+                    >
+                      <f.icon className="h-3.5 w-3.5" />
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
                 {previewing && !analyticsLoading && (
                   <span className="text-[10px] font-mono bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-full">
                     Showing first {previewRows.length} rows
@@ -298,7 +311,6 @@ export default function Export() {
               </div>
             )}
           </div>
-
         </div>
       </div>
     </div>

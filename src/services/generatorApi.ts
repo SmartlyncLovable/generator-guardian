@@ -20,18 +20,18 @@ export const generatorApi = {
   get: (id: string) =>
     request<GeneratorDetailResponse>(`/generators/${id}`),
 
-  analytics: (id: string, range?: '1h' | '24h' | '7d' | 'none') => {
-    if (range && range === 'none') {
-        console.log("Fetching analytics without range parameter");
-        return request<AnalyticsResponse>(
-            `/generators/${id}/analytics/today`
-        );
-    } else {
-        console.log(`Fetching analytics with range=${range}`);
+  analytics: (id: string, range?: '1h' | '24h' | '7d' | 'none', startDate?: string, endDate?: string) => {
+    //if (range && range === 'none') {
+    //    console.log("Fetching analytics without range parameter");
+    //    return request<AnalyticsResponse>(
+    //        `/generators/${id}/analytics/today`
+    //    );
+    //} else {
+      console.log(`Fetching analytics with date range ${startDate} to ${endDate}`);
       return request<AnalyticsResponse>(
-        `/generators/${id}/analytics?range=${range}`
+        `/generators/${id}/report?startDate=${startDate}&endDate=${endDate}`
       );
-    }
+    //}
   },
 
   liveParameters: (id: string) =>

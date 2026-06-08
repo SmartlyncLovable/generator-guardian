@@ -21,14 +21,20 @@ export interface Generator {
 }
 
 export const generators: Generator[] = [
-  {
-    id: 'DG-001', name: 'Generator Alpha', status: 'Running',
+  /*{
+    id: '6', name: 'Diesel Genset 6', status: 'Running',
     engine_speed: 1500, oilPressure: 45, coolantTemp: 82, voltage: 415,
     frequency: 50.0, controlMode: 'Auto', engineStarts: 342, engineHours: 12450,
-    engineBattery: 27.2, mainsPF: 0.92,
+    engineBattery: 27.2, mainsPF: 0.92, locationi
     genPower: { kWh: 8520, kVAh: 9260, kVARh: 3620 },
     mainsPower: { kWh: 45200, kVARh: 12800 },
     alarms: ['Low Fuel Warning', 'None', 'None'],
+  },*/
+  {
+    id: '6', name: 'Diesel Genset 6', location: 'Generator Room',
+  },
+  {
+    id: '9', name: 'DSE Panel', location: 'Monitoring Room',
   },
 ];
 

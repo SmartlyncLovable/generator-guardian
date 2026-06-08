@@ -47,15 +47,43 @@ export function useGenerator(id: string) {
   return { data, loading, error };
 }
 
-
-export function useGeneratorAnalytics(id: string, range: '1h' | 'none' | '24h' | '7d' = '24h') {
+export function useGeneratorAnalytics(
+  id: string,
+  range: '1h' | 'none' | '24h' | '7d' = '24h',
+  startDate?: string,
+  endDate?: string
+) {
   const [data, setData] = useState<AnalyticsResponse['data']>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    generatorApi.analytics(id, range).then(r => setData(r.data));
-  }, [id, range]);
+    if (!id) return;
 
-  return { data };
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+
+        const response = await generatorApi.analytics(
+          id,
+          range,
+          startDate,
+          endDate
+        );
+
+        setData(response.data);
+        console.log('Fetched analytics data:', response);
+      } catch (error) {
+        console.error('Failed to fetch analytics:', error);
+        setData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [id, range, startDate, endDate]);
+
+  return { data, loading };
 }
 
 export function useGeneratorIP(id: string) {
