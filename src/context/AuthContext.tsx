@@ -5,7 +5,8 @@ import React, {
   useEffect,
   ReactNode,
 } from 'react';
-import { User } from '../lib';
+//import { User } from '../lib';
+import type { User } from '@/lib/api';
 
 interface AuthContextType {
   user: User | null;
@@ -24,7 +25,29 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_BASE = import.meta.env.VITE_API_URL ?? '/api';
+const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8009/api';
+
+const TOKEN_KEY = 'auth_token';
+
+const getStoredToken = () => localStorage.getItem(TOKEN_KEY);
+
+const setStoredToken = (token: string) => {
+  localStorage.setItem(TOKEN_KEY, token);
+};
+
+const clearStoredToken = () => {
+  localStorage.removeItem(TOKEN_KEY);
+};
+
+const getAuthHeaders = () => {
+  const token = getStoredToken();
+
+  return {
+    Accept: 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+};
+
 
 // Helper to extract user from Laravel's APIResponse shape:
 // { status, message, data: { ... } } or fallback { user: { ... } }
@@ -39,20 +62,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * --------------------------------------------- */
   useEffect(() => {
     const checkSession = async () => {
+      const token = getStoredToken();
+
+      if (!token) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
       try {
         const res = await fetch(`${API_BASE}/auth/me`, {
-          credentials: 'include',
+          method: 'GET',
+          headers: getAuthHeaders(),
         });
 
-        if (res.ok) {
-          const data = await res.json();
-          const sessionUser = extractUser(data);
-          if (sessionUser) {
-            setUser(sessionUser);
-          }
+        if (!res.ok) {
+          clearStoredToken();
+          setUser(null);
+          return;
         }
-      } catch {
-        // Session check failed silently — user stays null
+
+        const data = await res.json();
+        const sessionUser = extractUser(data);
+
+        if (sessionUser) {
+          setUser(sessionUser);
+        } else {
+          clearStoredToken();
+          setUser(null);
+        }
+      } catch (error) {
+        console.error('Session check failed:', error);
+        clearStoredToken();
+        setUser(null);
       } finally {
         setLoading(false);
       }
@@ -92,23 +134,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (data.status === 'success') {
-        // Try to restore full session via /auth/me
-        try {
-          const meRes = await fetch(`${API_BASE}/auth/me`, {
-            credentials: 'include',
-          });
+        const token = data?.data?.access_token;
 
-          if (meRes.ok) {
-            const meData = await meRes.json();
-            const sessionUser = extractUser(meData);
-            setUser(sessionUser ?? extractUser(data));
-          } else {
-            // /me failed — fall back to login response payload
-            setUser(extractUser(data));
-          }
-        } catch {
-          setUser(extractUser(data));
+        if (!token) {
+          return {
+            success: false,
+            error: 'Login succeeded but no access token was returned.',
+          };
         }
+
+        setStoredToken(token);
+
+        const sessionUser = extractUser(data);
+        setUser(sessionUser);
 
         return { success: true };
       }
@@ -155,11 +193,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await fetch(`${API_BASE}/auth/logout`, {
         method: 'POST',
-        credentials: 'include',
+        headers: getAuthHeaders(),
       });
     } catch {
       // Logout failed silently — clear user regardless
     } finally {
+      clearStoredToken();
       setUser(null);
     }
   };

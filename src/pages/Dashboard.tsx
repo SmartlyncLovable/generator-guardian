@@ -104,7 +104,7 @@ export default function Dashboard() {
           <div className="absolute top-0 right-0 h-24 w-24 rounded-bl-full bg-slate-500/5" />
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-1">Stopped</p>
+              <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-1">Not Running</p>
               <p className="text-4xl font-black font-mono text-slate-600 dark:text-slate-300">{counts.Stopped}</p>
               <p className="text-xs text-muted-foreground mt-1">Generators </p>
             </div>

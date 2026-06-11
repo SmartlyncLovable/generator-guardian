@@ -83,7 +83,7 @@ export default function Export() {
   const previewColumns = selectedParams.filter((p) => paramKeyMap[p]);
 
   // Limit preview to 10 rows
-  const previewRows = useMemo(() => (analytics ?? []).slice(0, 10), [analytics]);
+  const previewRows = useMemo(() => (analytics ?? []).slice(0, 50), [analytics]);
 
   return (
     <div className="space-y-6">
