@@ -55,6 +55,7 @@ export function useGeneratorAnalytics(
 ) {
   const [data, setData] = useState<AnalyticsResponse['data']>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -62,6 +63,7 @@ export function useGeneratorAnalytics(
     const fetchData = async () => {
       try {
         setLoading(true);
+        setError(null);
 
         const response = await generatorApi.analytics(
           id,
@@ -70,10 +72,12 @@ export function useGeneratorAnalytics(
           endDate
         );
 
-        setData(response.data);
+        setData(response.data ?? []);
         console.log('Fetched analytics data:', response);
       } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to fetch analytics';
         console.error('Failed to fetch analytics:', error);
+        setError(message);
         setData([]);
       } finally {
         setLoading(false);
@@ -83,7 +87,7 @@ export function useGeneratorAnalytics(
     fetchData();
   }, [id, range, startDate, endDate]);
 
-  return { data, loading };
+  return { data, loading, error };
 }
 
 export function useGeneratorIP(id: string) {

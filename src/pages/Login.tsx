@@ -117,7 +117,7 @@ export default function Login() {
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
-                    placeholder="name@company.com"
+                    placeholder="Enter your email"
                     type="email"
                     autoCapitalize="none"
                     autoComplete="email"
@@ -132,9 +132,9 @@ export default function Login() {
                 <div className="grid gap-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="password">Password</Label>
-                    <a href="#" className="text-xs text-primary hover:underline underline-offset-4">
+                    {/*<a href="#" className="text-xs text-primary hover:underline underline-offset-4">
                       Forgot password?
-                    </a>
+                    </a>*/}
                   </div>
                   <Input
                     id="password"

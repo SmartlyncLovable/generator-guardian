@@ -27,11 +27,24 @@ const statusMeta = {
 } as const;
 
 const charts = [
-  { title: "Voltage (V)",              dataKey: "generator_voltage",   color: "hsl(142, 70%, 45%)" },
-  { title: "Frequency (Hz)",           dataKey: "generator_frequency", color: "hsl(38, 92%, 50%)"  },
-  { title: "Oil Pressure (PSI)",       dataKey: "oil_pressure",        color: "hsl(210, 100%, 55%)"},
-  { title: "Coolant Temperature (°C)", dataKey: "coolant_temperature", color: "hsl(0, 72%, 51%)"   },
+  { title: "Voltage (V)", dataKey: "generator_voltage", color: "hsl(142, 70%, 45%)" },
+  { title: "Frequency (Hz)", dataKey: "generator_frequency", color: "hsl(38, 92%, 50%)" },
+  { title: "Oil Pressure (PSI)", dataKey: "oil_pressure", color: "hsl(210, 100%, 55%)" },
+  { title: "Coolant Temperature (°C)", dataKey: "coolant_temperature", color: "hsl(0, 72%, 51%)" },
 ];
+
+function formatDate(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getTodayRange() {
+  const today = new Date();
+  const date = formatDate(today);
+  return { startDate: date, endDate: date };
+}
 
 export default function Analytics() {
   const { id } = useParams<{ id: string }>();
@@ -39,7 +52,11 @@ export default function Analytics() {
 
   const { data: generator, loading, error } = useGenerator(id!);
   const gen = generator;
-  const { data: analytics } = useGeneratorAnalytics(id!, "none");
+
+  const { startDate, endDate } = getTodayRange();
+  const { data: analytics, loading: analyticsLoading, error: analyticsError } = useGeneratorAnalytics(id!, "none", startDate, endDate);
+
+  const chartData = analytics;
 
   /* ---------- Loading ---------- */
   if (loading) return (
@@ -278,7 +295,7 @@ export default function Analytics() {
                 </div>
                 <p className="text-lg font-bold font-mono text-violet-600 dark:text-violet-400">{gen.voltage}</p>
                 <p className="text-[10px] mt-2 flex items-center gap-1">
-                  {gen.voltage >= 210 && gen.voltage <= 240
+                  {gen.voltage >= 210 && gen.voltage <= 24000
                     ? <><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /><span className="text-emerald-600 dark:text-emerald-400">Within normal range</span></>
                     : <><span className="h-1.5 w-1.5 rounded-full bg-red-400" /><span className="text-red-500">Out of range</span></>
                   }
@@ -326,41 +343,71 @@ export default function Analytics() {
       </div>
 
       {/* ── Charts ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {charts.map((chart) => (
-          <div key={chart.title} className="rounded-xl border bg-card shadow-sm overflow-hidden">
-            <div className="px-4 py-3 border-b bg-muted/40">
-              <h3 className="text-sm font-semibold">{chart.title}</h3>
+      <div className="rounded-xl border bg-card shadow-sm overflow-hidden mb-4">
+        <div className="px-4 py-3 border-b bg-muted/40 flex items-center justify-between">
+          <h3 className="text-sm font-semibold">Historical Trends — Today</h3>
+          {analyticsLoading && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="h-3 w-3 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+              Loading chart data...
             </div>
-            <div className="p-4 h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={analytics} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(220,15%,92%)" />
-                  <XAxis dataKey="timestamp" tick={{ fontSize: 9 }} stroke="hsl(220,10%,60%)" />
-                  <YAxis tick={{ fontSize: 9 }} stroke="hsl(220,10%,60%)" />
-                  <Tooltip
-                    contentStyle={{
-                      background: "hsl(0,0%,100%)",
-                      border: "1px solid hsl(220,15%,90%)",
-                      borderRadius: 8,
-                      fontSize: 11,
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-                    }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey={chart.dataKey}
-                    stroke={chart.color}
-                    strokeWidth={2}
-                    dot={false}
-                    activeDot={{ r: 4, strokeWidth: 0 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        ))}
+          )}
+        </div>
       </div>
+
+      {analyticsError ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-900/50 p-6 text-center">
+          <AlertTriangle className="h-6 w-6 text-red-500 mx-auto mb-2" />
+          <p className="text-sm font-medium text-red-600 dark:text-red-400">Failed to load analytics data</p>
+          <p className="text-xs text-muted-foreground mt-1">{analyticsError}</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {charts.map((chart) => (
+            <div key={chart.title} className="rounded-xl border bg-card shadow-sm overflow-hidden">
+              <div className="px-4 py-3 border-b bg-muted/40">
+                <h3 className="text-sm font-semibold">{chart.title}</h3>
+              </div>
+              <div className="p-4 h-72">
+                {analyticsLoading && chartData.length === 0 ? (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                  </div>
+                ) : chartData.length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
+                    No data available for today
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(220,15%,92%)" />
+                      <XAxis dataKey="timestamp" tick={{ fontSize: 9 }} stroke="hsl(220,10%,60%)" />
+                      <YAxis tick={{ fontSize: 9 }} stroke="hsl(220,10%,60%)" />
+                      <Tooltip
+                        contentStyle={{
+                          background: "hsl(0,0%,100%)",
+                          border: "1px solid hsl(220,15%,90%)",
+                          borderRadius: 8,
+                          fontSize: 11,
+                          boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                        }}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey={chart.dataKey}
+                        stroke={chart.color}
+                        strokeWidth={2}
+                        dot={false}
+                        activeDot={{ r: 4, strokeWidth: 0 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
     </div>
   );

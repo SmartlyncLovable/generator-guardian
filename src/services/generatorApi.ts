@@ -1,6 +1,19 @@
 import { GeneratorDetailResponse, GeneratorListResponse, LiveParametersResponse, AnalyticsResponse } from '@/types/generator';
 const BASE_URL = import.meta.env.VITE_API_BASE ?? 'http://localhost:8009/api';
 
+function formatDate(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getTodayRange() {
+  const today = new Date();
+  const date = formatDate(today);
+  return { startDate: date, endDate: date };
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -21,17 +34,13 @@ export const generatorApi = {
     request<GeneratorDetailResponse>(`/generators/${id}`),
 
   analytics: (id: string, range?: '1h' | '24h' | '7d' | 'none', startDate?: string, endDate?: string) => {
-    //if (range && range === 'none') {
-    //    console.log("Fetching analytics without range parameter");
-    //    return request<AnalyticsResponse>(
-    //        `/generators/${id}/analytics/today`
-    //    );
-    //} else {
-      console.log(`Fetching analytics with date range ${startDate} to ${endDate}`);
-      return request<AnalyticsResponse>(
-        `/generators/${id}/report?startDate=${startDate}&endDate=${endDate}`
-      );
-    //}
+    const rangeDates = getTodayRange();
+    const s = startDate ?? rangeDates.startDate;
+    const e = endDate ?? rangeDates.endDate;
+    console.log(`Fetching analytics with date range ${s} to ${e}`);
+    return request<AnalyticsResponse>(
+      `/generators/${id}/report?startDate=${encodeURIComponent(s)}&endDate=${encodeURIComponent(e)}`
+    );
   },
 
   liveParameters: (id: string) =>

@@ -29,7 +29,7 @@ import { useNavigate } from "react-router-dom";
 
 const navItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Generator Activities", url: "/logs", icon: ScrollText },
+  //{ title: "Generator Activities", url: "/logs", icon: ScrollText },
   { title: "User Management", url: "/users", icon: UserCog },
   { title: "Reports", url: "/report", icon: Download },
 ];
