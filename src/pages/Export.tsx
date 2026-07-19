@@ -9,6 +9,10 @@ import {
 } from "lucide-react";
 import { generators } from "@/data/generators";
 import { useGeneratorAnalytics } from "@/hooks/useGenerators";
+import type { AnalyticsResponse } from "@/types/generator";
+import * as XLSX from "xlsx";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const allParams = [
   "Engine Speed", "Oil Pressure", "Coolant Temp", "Engine Battery",
@@ -28,11 +32,36 @@ const paramKeyMap: Record<string, string> = {
   "Generator Voltage":      "generator_voltage",
   "Generator Frequency":    "generator_frequency",
   "Gen Power (kWh)":        "generator_kw",
-  "Gen Power (kVAh)":       "gen_kva",
-  "Gen Power (kVARh)":      "gen_kvar",
-  "Mains Power (kWh)":      "mains_kva",
+  "Gen Power (kVAh)":       "generator_kva",
+  "Gen Power (kVARh)":      "generator_kvar",
+  "Mains Power (kWh)":      "mains_kw",
   "Mains Power (kVARh)":    "mains_kvar",
+  "Alarm 1":                "alarm_1",
+  "Alarm 2":                "alarm_2",
+  "Alarm 3":                "alarm_3",
+  "Mains PF":               "mains_pf",
+  "Generator Control Mode": "control_mode",
+  "Engine Battery":         "engine_battery",
 };
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function escapeCsvValue(value: unknown) {
+  const str = String(value ?? "");
+  if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
 
 type ExportFormat = "CSV" | "Excel" | "PDF";
 
@@ -68,13 +97,52 @@ export default function Export() {
     );
 
   const handleExport = () => {
+    if (!analytics || analytics.length === 0) return;
+
     setExporting(true);
     setExported(false);
-    setTimeout(() => {
-      setExporting(false);
+
+    const genName = generators.find((g) => g.id === selectedGen)?.name ?? selectedGen;
+    const columns = ["Timestamp", ...selectedParams.filter((p) => paramKeyMap[p])];
+    const keys = ["timestamp", ...columns.slice(1).map((p) => paramKeyMap[p])];
+    const rows = analytics.map((row) =>
+      keys.map((key) => (row as Record<string, unknown>)[key] ?? "—")
+    );
+
+    try {
+      if (format === "CSV") {
+        const csv = [
+          columns.map(escapeCsvValue).join(","),
+          ...rows.map((r) => r.map(escapeCsvValue).join(",")),
+        ].join("\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        downloadBlob(blob, `${genName}_report_${dateFrom}_to_${dateTo}.csv`);
+      } else if (format === "Excel") {
+        const data = [columns, ...rows];
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Report");
+        XLSX.writeFile(wb, `${genName}_report_${dateFrom}_to_${dateTo}.xlsx`);
+      } else if (format === "PDF") {
+        const doc = new jsPDF({ orientation: "landscape" });
+        doc.text(`${genName} Report — ${dateFrom} to ${dateTo}`, 14, 10);
+        autoTable(doc, {
+          head: [columns],
+          body: rows,
+          startY: 18,
+          styles: { fontSize: 8 },
+          headStyles: { fillColor: [31, 41, 55] },
+        });
+        doc.save(`${genName}_report_${dateFrom}_to_${dateTo}.pdf`);
+      }
+
       setExported(true);
       setTimeout(() => setExported(false), 3000);
-    }, 1500);
+    } catch (e) {
+      console.error("Export failed", e);
+    } finally {
+      setExporting(false);
+    }
   };
 
   const handlePreview = () => setPreviewing(true);
@@ -289,7 +357,7 @@ export default function Export() {
                     </tr>
                   </thead>
                   <tbody>
-                    {previewRows.map((row: any, i: number) => (
+                    {previewRows.map((row: AnalyticsResponse['data'][number], i: number) => (
                       <tr key={i} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
                         <td className="px-3 py-2 font-mono text-muted-foreground whitespace-nowrap">{row.timestamp ?? "—"}</td>
                         {previewColumns.map((p) => (
