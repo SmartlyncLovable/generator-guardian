@@ -163,7 +163,7 @@ export default function Analytics() {
         </div>
 
         {/* Mains Power */}
-        <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+        {/*<div className="rounded-xl border bg-card shadow-sm overflow-hidden">
           <div className="px-4 py-3 border-b bg-muted/40">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
               <Cpu className="h-3.5 w-3.5 text-sky-500" /> Mains Power
@@ -182,10 +182,10 @@ export default function Analytics() {
               </div>
             ))}
           </div>
-        </div>
+        </div>*/}
 
         {/* Alarms */}
-        <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+        <div className="rounded-xl border bg-card col-span-2 shadow-sm overflow-hidden">
           <div className="px-4 py-3 border-b bg-muted/40">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
               <AlertTriangle className="h-3.5 w-3.5 text-red-500" /> Alarms
