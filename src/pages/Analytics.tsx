@@ -148,9 +148,9 @@ export default function Analytics() {
           </div>
           <div className="p-4 grid grid-cols-3 gap-3">
             {[
-              { label: "kWh",   value: gen.generator_kw  },
-              { label: "kVAh",  value: gen.gen_kva        },
-              { label: "kVARh", value: gen.gen_kvar       },
+              { label: "kW",   value: gen.generator_kw  },
+              { label: "kVA",  value: gen.gen_kva        },
+              { label: "kVAR", value: gen.gen_kvar       },
             ].map(({ label, value }) => (
               <div key={label} className="text-center bg-muted/40 rounded-lg py-2 px-1">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">{label}</p>
@@ -172,7 +172,7 @@ export default function Analytics() {
           <div className="p-4 grid grid-cols-2 gap-3">
             {[
               { label: "kVA",   value: gen.mains_kva  },
-              { label: "kVARh", value: gen.mains_kvar },
+              { label: "kVAR", value: gen.mains_kvar },
             ].map(({ label, value }) => (
               <div key={label} className="text-center bg-muted/40 rounded-lg py-2 px-1">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">{label}</p>

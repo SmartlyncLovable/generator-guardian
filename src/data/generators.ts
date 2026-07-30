@@ -15,8 +15,8 @@ export interface Generator {
   engineHours: number;
   engineBattery: number;
   mainsPF: number;
-  genPower: { kWh: number; kVAh: number; kVARh: number };
-  mainsPower: { kWh: number; kVARh: number };
+  genPower: { kW: number; kVA: number; kVAR: number };
+  mainsPower: { kW: number; kVAR: number };
   alarms: [string, string, string];
 }
 

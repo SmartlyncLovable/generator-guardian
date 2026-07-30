@@ -17,8 +17,8 @@ import autoTable from "jspdf-autotable";
 const allParams = [
   "Engine Speed", "Oil Pressure", "Coolant Temp", "Engine Battery",
   "Mains PF", "Engine Starts", "Engine Hours", "Generator Voltage",
-  "Generator Frequency", "Gen Power (kWh)", "Gen Power (kVAh)", "Gen Power (kVARh)",
-  "Mains Power (kWh)", "Mains Power (kVARh)", "Alarm 1", "Alarm 2", "Alarm 3",
+  "Generator Frequency", "Gen Power (kW)", "Gen Power (kVA)", "Gen Power (kVAR)",
+  "Mains Power (kW)", "Mains Power (kVAR)", "Alarm 1", "Alarm 2", "Alarm 3",
   "Generator Control Mode",
 ];
 
@@ -31,11 +31,11 @@ const paramKeyMap: Record<string, string> = {
   "Engine Hours":           "engine_hours",
   "Generator Voltage":      "generator_voltage",
   "Generator Frequency":    "generator_frequency",
-  "Gen Power (kWh)":        "generator_kw",
-  "Gen Power (kVAh)":       "generator_kva",
-  "Gen Power (kVARh)":      "generator_kvar",
-  "Mains Power (kWh)":      "mains_kw",
-  "Mains Power (kVARh)":    "mains_kvar",
+  "Gen Power (kW)":        "generator_kw",
+  "Gen Power (kVA)":       "generator_kva",
+  "Gen Power (kVAR)":      "generator_kvar",
+  "Mains Power (kW)":      "mains_kw",
+  "Mains Power (kVAR)":    "mains_kvar",
   "Alarm 1":                "alarm_1",
   "Alarm 2":                "alarm_2",
   "Alarm 3":                "alarm_3",
